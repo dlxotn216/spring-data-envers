@@ -3,7 +3,9 @@ package me.strong.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
+import org.springframework.data.envers.repository.support.EnversRevisionRepositoryFactoryBean;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.util.Optional;
 import java.util.Random;
@@ -16,8 +18,7 @@ import java.util.Random;
 public class JpaAuditConfiguration {
 
     @Bean
-    public AuditorAware<Long> auditorAware(){
-        //TODO ThreadLocal.get() -> 현재 request의 사용자 추출
-        return new AuditorAwareImpl();
+    public AuditorAware<Long> auditorAware() {
+        return () -> Optional.of(new Random().nextLong());
     }
 }

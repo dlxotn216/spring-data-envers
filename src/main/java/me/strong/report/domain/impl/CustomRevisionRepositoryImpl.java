@@ -55,7 +55,7 @@ public class CustomRevisionRepositoryImpl implements CustomRevisionRepository {
 //
 //        //hibernate 5.3에 추가 되어있는 기능으로 spring-data-envers 2.0.7에선 사용 불가
         //https://discourse.hibernate.org/t/how-to-retrieve-the-modification-flags-with-hibernate-envers/259/2
-//        List<Object[]> revisions = reader.createQuery().forRevisionsOfEntityWithChanges(Report.class, false, true)
+//        List<Object[]> revisions = reader.createQuery().forRevisionsOfEntityWithChanges(Report.class, false)
 //                .add(AuditEntity.id().eq(reportKey))
 ////                .add(AuditEntity.property("firstName").hasChanged())
 //                .getResultList();
