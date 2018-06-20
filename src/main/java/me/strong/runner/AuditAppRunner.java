@@ -90,5 +90,11 @@ public class AuditAppRunner implements ApplicationRunner {
 
         //Then
         memberRepository.findRevisions(member2.getMemberKey()).forEach(System.out::println);
+
+
+        reportRepository.findCustomReportHistoriesByReportKeyAsNativeQueryAndQLAM(1L)
+                .forEach(history->{
+                    System.out.println(history.toString());
+                });
     }
 }

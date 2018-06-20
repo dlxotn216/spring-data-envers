@@ -3,6 +3,7 @@ package me.strong.report.domain.impl;
 import me.strong.report.domain.CustomRevisionRepository;
 import me.strong.report.domain.Report;
 import me.strong.report.domain.ReportHistory;
+import me.strong.report.domain.ReportHistoryDto;
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.AuditReaderFactory;
 import org.hibernate.envers.query.AuditEntity;
@@ -10,6 +11,7 @@ import org.hibernate.envers.query.AuditQuery;
 import org.hibernate.envers.query.criteria.AuditProperty;
 import org.hibernate.envers.query.internal.property.EntityPropertyName;
 import org.hibernate.envers.query.internal.property.ModifiedFlagPropertyName;
+import org.qlrm.mapper.JpaResultMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.EntityManagerFactory;
@@ -124,5 +126,22 @@ public class CustomRevisionRepositoryImpl implements CustomRevisionRepository {
          */
         List<ReportHistory> histories = nativeQuery.getResultList();
         return histories;
+    }
+
+    /**
+     * http://simasch.github.io/qlrm/ QLRM 이용
+     * @param reportKey
+     * @return
+     */
+    @Override
+    public List<ReportHistoryDto> findCustomReportHistoriesByReportKeyAsNativeQueryAndQLAM(Long reportKey){
+        Query nativeQuery = entityManagerFactory.createEntityManager().createNativeQuery(
+                "SELECT REPORT_KEY, TITLE, TITLE_CHANGED, SIGNED_AT, SIGNED_AT_CHANGED, " +
+                        "CREATED_BY, CREATED_AT, UPDATED_BY, UPDATED_BY_CHANGED, UPDATED_AT, UPDATED_AT_CHANGED FROM REPORT_HISTORY"
+        );
+
+        JpaResultMapper mapper = new JpaResultMapper();
+        List<ReportHistoryDto> reportHistories = mapper.list(nativeQuery, ReportHistoryDto.class);
+        return reportHistories;
     }
 }

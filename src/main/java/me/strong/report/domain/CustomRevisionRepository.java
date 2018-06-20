@@ -15,4 +15,6 @@ public interface CustomRevisionRepository {
     List<ReportHistory> findCustomReportHistoriesByReportKey(Long reprtKey);
 
     List<ReportHistory> findCustomReportHistoriesByReportKeyAsNativeQuery(Long reprtKey);
+
+    List<ReportHistoryDto> findCustomReportHistoriesByReportKeyAsNativeQueryAndQLAM(Long reportKey);
 }
