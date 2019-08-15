@@ -433,24 +433,26 @@ History 테이블의 Postfix를 바꾸고 싶은 경우엔 아래 옵션을 설�
     
     
     
-    2019-08-15 
-    아래와 같이 traverseRelation을 이용하여 조인할 수 있다.
-    ```java
+   - 2019-08-15 
+   아래와 같이 traverseRelation을 이용하여 조인할 수 있다.  
+    
+   ```java
        AuditQuery auditQuery = reader.createQuery()
                                       .forRevisionsOfEntity(TemplateVersion.class, false, true)
                                       .traverseRelation("templateFile", JoinType.INNER, "awf")
                                       ;
-    ```
-    아래의 주의와 같이 many-to-one 매핑에만 LEFT, INNER를 통해서만 된다고 한다
-    Relation joins can be applied to many-to-one and many-to-one mappings only when using JoinType.LEFT or JoinType.INNER.
+   ```  
     
-    왜만들어 놓은지 모르겠으나 그 위에 보면 아직 실험적이란다.
-    Relation join queries are considered experimental and may change in future releases.
+   아래의 주의와 같이 many-to-one 매핑에만 LEFT, INNER를 통해서만 된다고 한다  
+   Relation joins can be applied to many-to-one and many-to-one mappings only when using JoinType.LEFT or JoinType.INNER.  
+   
+   왜만들어 놓은지 모르겠으나 그 위에 보면 아직 실험적이란다.  
+   Relation join queries are considered experimental and may change in future releases.  
     
-    대충 실행 아래와 같은 jpql이 생성되는 듯 하다
-    io.crscube.safetyapp.template.domain.model.TemplateVersion_HISTORY Entity를 통해서 직접 조인하려고 했으나
-    생각해보니 연관관계가 없어서 그마저도 불가능한 듯.
-    ```sql
+   대충 실행 아래와 같은 jpql이 생성되는 듯 하다  
+   io.crscube.safetyapp.template.domain.model.TemplateVersion_HISTORY Entity를 통해서 직접 조인하려고 했으나  
+   생각해보니 연관관계가 없어서 그마저도 불가능한 듯.  
+   ```sql
    	 select e__.originalId.key,
 	      e__.originalId.REV.id,
 	      e__.versionName,
@@ -462,5 +464,5 @@ History 테이블의 Postfix를 바꾸고 싶은 경우엔 아래 옵션을 설�
 	  org.hibernate.envers.DefaultRevisionEntity r
 	  where e__.originalId.REV.id = r.id
 	  order by e__.originalId.REV.id desc
-    ```
+    ```  
     
