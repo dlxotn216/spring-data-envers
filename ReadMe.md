@@ -464,5 +464,23 @@ History 테이블의 Postfix를 바꾸고 싶은 경우엔 아래 옵션을 설�
 	  org.hibernate.envers.DefaultRevisionEntity r
 	  where e__.originalId.REV.id = r.id
 	  order by e__.originalId.REV.id desc
-    ```  
+   ```  
     
+    
+   - 2019-08-15 (2)
+   jpql로 연관관계가 없어도 쿼리작성이 가능하단다. 그래서 아래와 같이 쿼리 짜보았다  
+    
+   ```sql
+       select t from io.crscube.safetyapp.template.domain.model.TemplateVersion_HISTORY t join fetch SystemFile f on t.fileKey = f.key
+   ```
+    
+   근데 계속 fileKey가 없다고 에러가 난다.  
+   혹시나 해서 file_key로 조회 해보아도 안된다  
+   
+   왜그럴까 하고 디버깅을 해서 따라 들어가보았고 아래 이미지에서처럼 프로퍼티 매핑에서 단서를 찾을 수 있었다.  
+   enver가 생성하는 history entity의 프로퍼티 규칙은 entityName_entityKeyName 인 듯 하다.
+   
+   즉 templateFile_key로 생각하면 될 것 같다     
+   <img src="https://github.com/dlxotn216/image/blob/master/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA%202019-08-15%20%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE%205.01.19.png?raw=true" />
+
+   JPQL로 조인하는 방법이 제일 깔끔한 것 같기도 하다. 정렬이나 페이징도 손쉽게 쓸 수 있으니...
