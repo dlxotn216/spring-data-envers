@@ -433,7 +433,7 @@ History 테이블의 Postfix를 바꾸고 싶은 경우엔 아래 옵션을 설�
     
     
     
-   - 2019-08-15 
+### 2019-08-15 
    아래와 같이 traverseRelation을 이용하여 조인할 수 있다.  
     
    ```java
@@ -467,7 +467,7 @@ History 테이블의 Postfix를 바꾸고 싶은 경우엔 아래 옵션을 설�
    ```  
     
     
-   - 2019-08-15 (2)
+### 2019-08-15(2)
    jpql로 연관관계가 없어도 쿼리작성이 가능하단다. 그래서 아래와 같이 쿼리 짜보았다  
     
    ```sql
@@ -484,3 +484,158 @@ History 테이블의 Postfix를 바꾸고 싶은 경우엔 아래 옵션을 설�
    <img src="https://github.com/dlxotn216/image/blob/master/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA%202019-08-15%20%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE%205.01.19.png?raw=true" />
 
    JPQL로 조인하는 방법이 제일 깔끔한 것 같기도 하다. 정렬이나 페이징도 손쉽게 쓸 수 있으니...
+
+### 2021-03-05 Revision number 관련 주의사항
+Hibernate Enver에서 Revisioin에 대한 정보를 관리하는 테이블인 REVINFO는 REV, REVTSTMP 두 컬럼이 존재한다.  
+여기서 REV 컬럼은 모든 Entity의 Revision 테이블에 매핑 된 외래키로 "한 트랜잭션에 어떤 Entity에 변경이 가해졌는가" 등에 대한 요구를 충족시키기에 유용하다.    
+
+REV 컬럼은 REVINFO 테이블의 PK이다.   
+<img src="https://github.com/dlxotn216/image/blob/master/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA%202021-03-05%20%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE%202.27.31.png?raw=true" />
+
+따라서 다른 Entity와 마찬가지로 Long에 대한 값으로 매핑 될 수 있어야 하나 슬프게도 Default는 revisionPropType에 의해 Integer로 매핑된다.    
+<img src="https://github.com/dlxotn216/image/blob/master/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA%202021-03-05%20%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE%202.21.54.png?raw=true" />
+
+그에 따라서 자동 생성 된 테이블 역시 INTEGER(10) - Integer 타입으로 매핑이 된다. 
+<img src="https://github.com/dlxotn216/image/blob/master/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA%202021-03-05%20%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE%202.22.13.png?raw=true" />
+
+여기서 Integer로 매핑 되는 것이 무슨 문제인가 할 수 있지만 서비스를 배포하고 운영하다보면 Integer.MAX를 넘는 경우는 생각보다 많다.  
+게다가 모든 Entity에 대한 변경사항이 발생 할 때마다 증가하는 테이블의 PK이니 그 속도는 타 Entity보다 더 빠를 것이므로 꼭 필요한 설정이 아닐 수 없다.  
+
+그렇다고 REVISION 테이블의 컬럼 타입만 바꾸어주면 문제 없을까?  
+Revision Entity의 revision 프로퍼티 Integer 이므로 문제가 생길 수 밖에 없다. 어떻게 처리해야 할까?  
+
+Enver 관련 설정 중 RevisionInfoConfiguration 클래스에 아래와 같은 로직이 있다.  
+<img src="https://github.com/dlxotn216/image/blob/master/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA%202021-03-05%20%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE%202.33.13.png?raw=true" />
+  
+@RevisionEntity라는 어노테이션이 붙은 Entity에 @RevisionNumber, @RevisionTimestamp를 붙인 필드를 요구하는 듯 하여  
+아래와 같이 선언 해 보았다.    
+
+```java
+@Getter
+@Entity
+@RevisionEntity
+@Table(name = "REVINFO")
+public class Revision implements Serializable {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "REV_SEQ")
+    @SequenceGenerator(name = "REV_SEQ", sequenceName = "REV_SEQ")
+    @RevisionNumber
+    @Column(name = "REV")
+    private Long id;
+
+    @RevisionTimestamp
+    @Column(name = "REVTSTMP")
+    private LocalDateTime timestamp;
+}
+```
+그러나 어플리케이션 구동 중 아래와 같은 오류가 났다. Long, java.util.Date, java.sql.Date 타입만 된단다.   
+```text
+Caused by: org.hibernate.MappingException: The field annotated with @RevisionTimestamp must be of type long, Long, java.util.Date or java.sql.Date
+```
+
+아래와 같이 Long으로 선언해보았고  정상적으로 어플리케이션이 구동 된 것을 확인했다.   
+```java
+@Getter
+@Entity
+@RevisionEntity
+@Table(name = "REVINFO")
+public class Revision implements Serializable {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "REV_SEQ")
+    @SequenceGenerator(name = "REV_SEQ", sequenceName = "REV_SEQ")
+    @RevisionNumber
+    @Column(name = "REV")
+    private Long id;
+
+    @RevisionTimestamp
+    @Column(name = "REVTSTMP")
+    private Long timestamp;
+
+    @Transient
+    public LocalDateTime getRevisionDate() {
+        return LocalDateTime.from(Instant.ofEpochMilli(timestamp));
+    }
+}
+```
+
+RevisionInfoConfiguration 클래스에 디버깅을 걸어보면 아래와 같이 직접 선언한 Revision 클래스가 잘 들어간 것이 보인다.    
+<img src="https://github.com/dlxotn216/image/blob/master/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA%202021-03-05%20%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE%202.24.37.png?raw=true" />
+
+또한 실제 생성 된 테이블도 아래와 같이 BIGINT(19) - Long으로 매핑 된 것을 볼 수 있다.  
+<img src="https://github.com/dlxotn216/image/blob/master/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA%202021-03-05%20%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE%202.25.06.png?raw=true" />
+   
+만약 RevisionRepository를 사용하고 있다면 아래와 같이 RevisionRepository의 Generic type도 바꾸는 것을 까먹지 않아야 한다.
+```java
+public interface MemberRepository extends JpaRepository<Member, Long>, RevisionRepository<Member, Long, Long> {
+}
+```   
+   
+운영중인 서비스에서 이 문제를 마주하지 않은 것을 천만 다행으로 생각한다. 자칫 잘못하면 모든 CUD(Command) 요청이 다 거절 될 뻔 했으니...  
+Enver 개발자들은 왜 기본 타입을 Integer로 적용 했을까 의문이다. RevisionTimestamp가 Long, Date 만 가능한 것은 하위 호환성을 위한 것이라 이해는 한다만...
+
+### 2021-03-05 Audit 적용 방식 변경 
+최초는 BaseEntity를 상속하는 형태였다. 하지만 시간이 지나고 보니 Embeddable 한 Entity를 주입하는게 훨씬 나을 것 같다.  
+공통 필드라고 해서 상속을 하는 것은 Entity에 불필요한 제약사항을 집어넣는 것 같아서 말이다.  
+
+```java
+@Setter
+@Getter
+@Embeddable
+public class Audit {
+    @Column(name = "created_by")
+    @CreatedBy
+    private Long createdBy;
+
+    @Column(name = "created_at")
+    @CreatedDate
+    private LocalDateTime createdAt;
+
+    @Column(name = "modified_by")
+    @LastModifiedBy
+    private Long modifiedBy;
+
+    @Column(name = "modified_at")
+    @LastModifiedDate
+    private LocalDateTime modifiedDate;
+}
+@Entity
+@Getter
+@Table(name = "AUD_MEMBER")
+@Audited(withModifiedFlag = true)
+@EntityListeners(value = {AuditingEntityListener.class})
+public class AuditedMember {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "AUD_MEMBER_SEQ")
+    @SequenceGenerator(name = "AUD_MEMBER_SEQ", sequenceName = "AUD_MEMBER_SEQ")
+    private Long key;
+
+    private String id;
+
+    private String name;
+
+    @Embedded
+    private Audit audit;
+
+    public Long getCreatedBy() {
+        return audit.getCreatedBy();
+    }
+}
+```
+
+### 2021-03-05 Audit 조회 시 JPQL에 대한 내용  
+JPA로 프로젝트를 진행하면서 느낀 점이 JPQL, QueryDSL을 과연 사용해야 하는 것이다.  
+ORM이라는 것이 Object와 Relation의 패러다임 차이로 인해 발생하는 불일치를 Mapping 하는 것 아닌가.  
+그런데 Object의 조회를 위해서 Relation에서 SQL을 사용하듯 JPQL, QueryDSL을 사용하는 꼴이라고 생각이 든다.  
+
+차라리 CQRS 패턴을 따라 Command엔 JPA를 적극 활용하고 Query에는 적절한 SQL을 사용하는 것이 좋지 않나 싶다.  
+쿼리를 짜다보면 실행계획을 보고 튜닝도 필요한 시점이 있는데 JPQL, QueryDSL로 작성된 것을 쿼리로 옮겨서 돌려보자니 여간 불편한 것이 아니다.  
+(물론 내가 더 좋은 방법이 있는데 잘 활용하지 못하는 것일수도...)  
+
+새로 프로젝트를 진행한다면 간단한 조회엔 JDBC Template? 만약 로컬 환경을 꼭 H2 같은 인메모리 DB로 고수해서 통합테스트까지 잘 하고 싶으면 JOOQ를 사용하고  
+그 외적인 부분은 Hibernate를 사용하지 않을까 싶다.   
+Command 영역도 JOOQ와 같은 SQL로 처리하자니 생각보다 Enver에서 편히 해주는 것들이 많아 놓치고 싶진 않으니...  
+
+Enver를 어느정도 포기한다면 JOOQ에 Spring Data R2DBC도 좋은 조합 같다. 대용량 Insert 등의 작업은 확실히 Hibernate 보단 SQL 쪽이 나을테고  
+최근 JOOQ에서 Reactive Fetching을 지원한다는 매뉴얼을 보아서 더욱 흥미가 간다.  
+<a href="https://www.jooq.org/doc/latest/manual/sql-execution/fetching/reactive-fetching/">JOOQ Reactive Fetching</a>  
+   
