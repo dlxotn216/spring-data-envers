@@ -638,4 +638,7 @@ Command 영역도 JOOQ와 같은 SQL로 처리하자니 생각보다 Enver에서
 Enver를 어느정도 포기한다면 JOOQ에 Spring Data R2DBC도 좋은 조합 같다. 대용량 Insert 등의 작업은 확실히 Hibernate 보단 SQL 쪽이 나을테고  
 최근 JOOQ에서 Reactive Fetching을 지원한다는 매뉴얼을 보아서 더욱 흥미가 간다.  
 <a href="https://www.jooq.org/doc/latest/manual/sql-execution/fetching/reactive-fetching/">JOOQ Reactive Fetching</a>  
+
+### 2024-02-18 선택적 Revision 쌓기 관련 내용 추가.
+<a href="https://medium.com/@taesulee93/spring-data-envers%EB%A5%BC-%ED%86%B5%ED%95%9C-revision-%EA%B4%80%EB%A6%AC%EC%99%80-%EC%9C%A0%EC%9A%A9%ED%95%9C-constimization-%ED%8F%AC%EC%9D%B8%ED%8A%B8-conditional-revision-revisionentity-9407f479d80a">Spring Data Envers를 통한 Revision 관리와 유용한 Constimization 포인트 (Conditional Revision, RevisionEntity)</a>
    
